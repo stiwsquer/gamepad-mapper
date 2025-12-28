@@ -227,20 +227,22 @@ int main()
             rawInputController.Update();
             
             // Process Raw Input button mappings manually
-            if (rawInputController.IsButtonAJustPressed())
+            // Button A (index 0) -> Space
+            if (rawInputController.IsButtonJustPressed(0)) // BUTTON_A = 0
             {
                 keyboardMouse.SendKeyDown(VK_SPACE);
             }
-            else if (rawInputController.IsButtonAJustReleased())
+            else if (rawInputController.IsButtonJustReleased(0))
             {
                 keyboardMouse.SendKeyUp(VK_SPACE);
             }
             
-            if (rawInputController.IsButtonBJustPressed())
+            // Button B (index 1) -> Escape
+            if (rawInputController.IsButtonJustPressed(1)) // BUTTON_B = 1
             {
                 keyboardMouse.SendKeyDown(VK_ESCAPE);
             }
-            else if (rawInputController.IsButtonBJustReleased())
+            else if (rawInputController.IsButtonJustReleased(1))
             {
                 keyboardMouse.SendKeyUp(VK_ESCAPE);
             }
