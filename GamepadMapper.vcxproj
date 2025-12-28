@@ -65,7 +65,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>xinput.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xinput.lib;hid.lib;dinput8.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,16 +84,18 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>xinput.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xinput.lib;hid.lib;dinput8.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\DirectInputDevice.h" />
     <ClInclude Include="src\KeyboardMouse.h" />
     <ClInclude Include="src\Mapper.h" />
     <ClInclude Include="src\RawInputDevice.h" />
     <ClInclude Include="src\XInputDevice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\DirectInputDevice.cpp" />
     <ClCompile Include="src\KeyboardMouse.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mapper.cpp" />

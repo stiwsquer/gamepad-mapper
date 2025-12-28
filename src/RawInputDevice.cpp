@@ -30,22 +30,31 @@ bool RawInputDevice::Initialize(HWND hwnd)
 
     m_hwnd = hwnd;
 
-    // Register for Raw Input from game controllers
-    RAWINPUTDEVICE rid[1];
+    // Register for Raw Input from ALL HID devices (Xbox controllers may not report as gamepad)
+    // We'll filter for game controllers in ProcessRawInput
+    RAWINPUTDEVICE rid[2];
     
+    // Register for generic gamepad
     rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
     rid[0].usUsage = HID_USAGE_GENERIC_GAMEPAD;
     rid[0].dwFlags = RIDEV_INPUTSINK; // Receive input even when not in foreground
     rid[0].hwndTarget = hwnd;
+    
+    // Also register for joystick (Xbox controllers sometimes report as joystick)
+    rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+    rid[1].usUsage = 0x04; // Joystick
+    rid[1].dwFlags = RIDEV_INPUTSINK;
+    rid[1].hwndTarget = hwnd;
 
-    BOOL result = RegisterRawInputDevices(rid, 1, sizeof(RAWINPUTDEVICE));
+    BOOL result = RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE));
     
     if (!result)
     {
-        return false;
+        DWORD error = GetLastError();
+        // Continue anyway - registration might partially work
     }
 
-    m_isConnected = true;
+    // Don't set connected yet - wait for first input
     return true;
 }
 
@@ -85,24 +94,25 @@ bool RawInputDevice::ProcessRawInput(LPARAM lParam)
     {
         RAWHID* pHid = &raw->data.hid;
         
-        // Xbox controllers send variable length HID reports
-        // We need to parse the button data from the HID report
         if (pHid->dwSizeHid > 0 && pHid->bRawData)
         {
             BYTE* pData = (BYTE*)pHid->bRawData;
             DWORD dataSize = pHid->dwSizeHid;
             
-            // Xbox 360/One controller HID format varies, but buttons are usually in the first few bytes
-            // Try to find button data - common formats:
-            // Format 1: Buttons at offset 4-5 (Xbox 360)
-            // Format 2: Buttons at offset 0-1 (some controllers)
+            // Xbox controllers typically send reports of various sizes
+            // Common sizes: 14 bytes (Xbox 360), 20 bytes (Xbox One)
+            // Button data is usually in bytes 4-5 or 5-6
             
+            // Try multiple common formats
+            bool buttonsFound = false;
+            
+            // Format 1: Xbox 360 style - buttons at offset 4-5
             if (dataSize >= 6)
             {
-                // Try common Xbox controller format: buttons at byte 4-5
                 BYTE buttons1 = pData[4];
                 BYTE buttons2 = (dataSize >= 6) ? pData[5] : 0;
                 
+                // Check if this looks like valid button data (at least one bit set or all clear is valid)
                 // Update button states
                 m_currentButtons[BUTTON_A] = (buttons1 & 0x01) != 0;
                 m_currentButtons[BUTTON_B] = (buttons1 & 0x02) != 0;
@@ -119,11 +129,38 @@ bool RawInputDevice::ProcessRawInput(LPARAM lParam)
                     m_currentButtons[BUTTON_RS] = (buttons2 & 0x02) != 0;
                 }
                 
+                buttonsFound = true;
                 m_isConnected = true;
             }
-            else if (dataSize >= 2)
+            
+            // Format 2: Try offset 5-6 (Xbox One sometimes uses this)
+            if (!buttonsFound && dataSize >= 7)
             {
-                // Alternative format: buttons might be at offset 0-1
+                BYTE buttons1 = pData[5];
+                BYTE buttons2 = (dataSize >= 7) ? pData[6] : 0;
+                
+                m_currentButtons[BUTTON_A] = (buttons1 & 0x01) != 0;
+                m_currentButtons[BUTTON_B] = (buttons1 & 0x02) != 0;
+                m_currentButtons[BUTTON_X] = (buttons1 & 0x04) != 0;
+                m_currentButtons[BUTTON_Y] = (buttons1 & 0x08) != 0;
+                m_currentButtons[BUTTON_LB] = (buttons1 & 0x10) != 0;
+                m_currentButtons[BUTTON_RB] = (buttons1 & 0x20) != 0;
+                m_currentButtons[BUTTON_BACK] = (buttons1 & 0x40) != 0;
+                m_currentButtons[BUTTON_START] = (buttons1 & 0x80) != 0;
+                
+                if (dataSize >= 7)
+                {
+                    m_currentButtons[BUTTON_LS] = (buttons2 & 0x01) != 0;
+                    m_currentButtons[BUTTON_RS] = (buttons2 & 0x02) != 0;
+                }
+                
+                buttonsFound = true;
+                m_isConnected = true;
+            }
+            
+            // Format 3: Try offset 0-1 (some generic controllers)
+            if (!buttonsFound && dataSize >= 2)
+            {
                 BYTE buttons1 = pData[0];
                 
                 m_currentButtons[BUTTON_A] = (buttons1 & 0x01) != 0;
@@ -131,6 +168,7 @@ bool RawInputDevice::ProcessRawInput(LPARAM lParam)
                 m_currentButtons[BUTTON_X] = (buttons1 & 0x04) != 0;
                 m_currentButtons[BUTTON_Y] = (buttons1 & 0x08) != 0;
                 
+                buttonsFound = true;
                 m_isConnected = true;
             }
         }
