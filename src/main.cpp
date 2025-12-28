@@ -263,9 +263,53 @@ int main()
         else if (useRawInput)
         {
             // Use Raw Input
+            // IMPORTANT: Update() must be called AFTER processing button states
+            // because it copies current to previous
+            
+            // Process Raw Input button mappings BEFORE Update()
+            // Try all button indices to find which one corresponds to A and B
+            // Button A (index 0) -> Space
+            if (rawInputController.IsButtonJustPressed(0)) // BUTTON_A = 0
+            {
+                std::cout << "Raw Input: Button 0 (A?) pressed - sending Space" << std::endl;
+                keyboardMouse.SendKeyDown(VK_SPACE);
+                keyboardMouse.SendKeyUp(VK_SPACE); // Also send key up immediately for testing
+            }
+            else if (rawInputController.IsButtonJustReleased(0))
+            {
+                std::cout << "Raw Input: Button 0 (A?) released" << std::endl;
+            }
+            
+            // Button B (index 1) -> Escape
+            if (rawInputController.IsButtonJustPressed(1)) // BUTTON_B = 1
+            {
+                std::cout << "Raw Input: Button 1 (B?) pressed - sending Escape" << std::endl;
+                keyboardMouse.SendKeyDown(VK_ESCAPE);
+                keyboardMouse.SendKeyUp(VK_ESCAPE); // Also send key up immediately for testing
+            }
+            else if (rawInputController.IsButtonJustReleased(1))
+            {
+                std::cout << "Raw Input: Button 1 (B?) released" << std::endl;
+            }
+            
+            // Debug: Check all buttons to see which ones are being detected
+            static DWORD lastDebugTime = 0;
+            if (currentTime - lastDebugTime > 1000) // Every second
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    if (rawInputController.IsButtonPressed(i))
+                    {
+                        std::cout << "Raw Input: Button " << i << " is currently pressed" << std::endl;
+                    }
+                }
+                lastDebugTime = currentTime;
+            }
+            
+            // Update button states AFTER processing (this copies current to previous)
             rawInputController.Update();
             
-            // Check if we're receiving any input at all
+            // Debug: Check if we're receiving any input at all
             static bool firstInputReceived = false;
             static DWORD lastWarningTime = 0;
             bool anyButtonPressed = false;
@@ -276,7 +320,7 @@ int main()
                     anyButtonPressed = true;
                     if (!firstInputReceived)
                     {
-                        std::cout << "Raw Input: Controller input detected!" << std::endl;
+                        std::cout << "Raw Input: Controller input detected! Button " << i << " is pressed." << std::endl;
                         firstInputReceived = true;
                     }
                     break;
@@ -291,55 +335,64 @@ int main()
                 std::cout << "         Try using DirectInput mode (option 3) instead." << std::endl;
                 lastWarningTime = currentTime;
             }
-            
-            // Process Raw Input button mappings manually
-            // Button A (index 0) -> Space
-            if (rawInputController.IsButtonJustPressed(0)) // BUTTON_A = 0
-            {
-                keyboardMouse.SendKeyDown(VK_SPACE);
-            }
-            else if (rawInputController.IsButtonJustReleased(0))
-            {
-                keyboardMouse.SendKeyUp(VK_SPACE);
-            }
-            
-            // Button B (index 1) -> Escape
-            if (rawInputController.IsButtonJustPressed(1)) // BUTTON_B = 1
-            {
-                keyboardMouse.SendKeyDown(VK_ESCAPE);
-            }
-            else if (rawInputController.IsButtonJustReleased(1))
-            {
-                keyboardMouse.SendKeyUp(VK_ESCAPE);
-            }
         }
         else if (useDirectInput)
         {
             // Use DirectInput
-            if (directInputController.Update())
+            // IMPORTANT: Process button states BEFORE Update() because Update() copies current to previous
+            
+            // Process DirectInput button mappings BEFORE Update()
+            // Try all button indices - Xbox controller mapping may vary
+            for (int i = 0; i < 10; i++)
             {
-                // Process DirectInput button mappings manually
-                // Button A (index 0) -> Space
-                if (directInputController.IsButtonJustPressed(0))
+                if (directInputController.IsButtonJustPressed(i))
                 {
-                    keyboardMouse.SendKeyDown(VK_SPACE);
-                }
-                else if (directInputController.IsButtonJustReleased(0))
-                {
-                    keyboardMouse.SendKeyUp(VK_SPACE);
-                }
-                
-                // Button B (index 1) -> Escape
-                if (directInputController.IsButtonJustPressed(1))
-                {
-                    keyboardMouse.SendKeyDown(VK_ESCAPE);
-                }
-                else if (directInputController.IsButtonJustReleased(1))
-                {
-                    keyboardMouse.SendKeyUp(VK_ESCAPE);
+                    std::cout << "DirectInput: Button " << i << " just pressed!" << std::endl;
+                    
+                    // Map first few buttons to keys for testing
+                    if (i == 0) // Usually A
+                    {
+                        std::cout << "  -> Sending Space" << std::endl;
+                        keyboardMouse.SendKeyDown(VK_SPACE);
+                        keyboardMouse.SendKeyUp(VK_SPACE); // Send both for testing
+                    }
+                    else if (i == 1) // Usually B
+                    {
+                        std::cout << "  -> Sending Escape" << std::endl;
+                        keyboardMouse.SendKeyDown(VK_ESCAPE);
+                        keyboardMouse.SendKeyUp(VK_ESCAPE); // Send both for testing
+                    }
                 }
             }
-            else
+            
+            // Debug: Show all button states when any button is pressed
+            static DWORD lastDebugTime = 0;
+            bool anyPressed = false;
+            for (int i = 0; i < 10; i++)
+            {
+                if (directInputController.IsButtonPressed(i))
+                {
+                    anyPressed = true;
+                    break;
+                }
+            }
+            
+            if (anyPressed && (currentTime - lastDebugTime > 500)) // Every 500ms when pressed
+            {
+                std::cout << "DirectInput: Buttons currently pressed: ";
+                for (int i = 0; i < 10; i++)
+                {
+                    if (directInputController.IsButtonPressed(i))
+                    {
+                        std::cout << i << " ";
+                    }
+                }
+                std::cout << std::endl;
+                lastDebugTime = currentTime;
+            }
+            
+            // Update device state
+            if (!directInputController.Update())
             {
                 // DirectInput failed (device may have been disconnected)
                 static DWORD lastWarningTime = 0;
