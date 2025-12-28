@@ -36,6 +36,28 @@ public:
     bool SendKeyPress(WORD virtualKey);
 
     /**
+     * Send a keyboard key down event using scan code (more reliable)
+     * @param virtualKey Virtual key code
+     * @return true if successful
+     */
+    bool SendKeyDownScanCode(WORD virtualKey);
+
+    /**
+     * Send a keyboard key up event using scan code (more reliable)
+     * @param virtualKey Virtual key code
+     * @return true if successful
+     */
+    bool SendKeyUpScanCode(WORD virtualKey);
+
+    /**
+     * Send a keyboard key using keybd_event (fallback method)
+     * @param virtualKey Virtual key code
+     * @param keyDown true for key down, false for key up
+     * @return true if successful
+     */
+    bool SendKeyEvent(WORD virtualKey, bool keyDown);
+
+    /**
      * Send mouse button down event
      * @param button Mouse button (0=left, 1=right, 2=middle)
      * @return true if successful
