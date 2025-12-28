@@ -239,14 +239,3 @@ void DirectInputDevice::Cleanup()
     m_isConnected = false;
 }
 
-// Helper methods for enumeration callback
-LPDIRECTINPUT8 DirectInputDevice::GetDirectInput()
-{
-    return m_pDI;
-}
-
-LPDIRECTINPUTDEVICE8* DirectInputDevice::GetJoystickPtr()
-{
-    return &m_pJoystick;
-}
-

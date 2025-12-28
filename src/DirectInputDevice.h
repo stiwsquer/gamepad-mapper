@@ -63,11 +63,11 @@ public:
      */
     void Cleanup();
 
+    // Helper methods for enumeration callback (public so callback can access)
+    LPDIRECTINPUT8 GetDirectInput() { return m_pDI; }
+    LPDIRECTINPUTDEVICE8* GetJoystickPtr() { return &m_pJoystick; }
+
 private:
-    // Helper methods for enumeration callback
-    LPDIRECTINPUT8 GetDirectInput();
-    LPDIRECTINPUTDEVICE8* GetJoystickPtr();
-    
     LPDIRECTINPUT8 m_pDI;
     LPDIRECTINPUTDEVICE8 m_pJoystick;
     bool m_isConnected;
