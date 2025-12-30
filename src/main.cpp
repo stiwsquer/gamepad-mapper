@@ -3,17 +3,53 @@
 #include "XInputDevice.h"
 #include "KeyboardMouse.h"
 #include "Mapper.h"
+#include "VirtualController.h"
+
+/**
+ * Check if the application is running with administrator privileges
+ * @return true if running as administrator
+ */
+bool IsRunningAsAdministrator()
+{
+    BOOL isAdmin = FALSE;
+    PSID adminGroup = nullptr;
+    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
+    
+    if (AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &adminGroup))
+    {
+        CheckTokenMembership(nullptr, adminGroup, &isAdmin);
+        FreeSid(adminGroup);
+    }
+    
+    return isAdmin == TRUE;
+}
 
 /**
  * Main entry point for GamepadMapper application
  * 
- * This application maps Xbox controller input to keyboard and mouse events.
- * The main loop runs at approximately 200 Hz (5ms per frame) for low latency.
+ * This application maps Xbox controller input to keyboard and mouse events
+ * for The Witcher 1, and optionally creates a virtual Xbox 360 controller
+ * using ViGEm. The main loop runs at approximately 200 Hz (5ms per frame).
  */
 int main()
 {
-    std::cout << "GamepadMapper - Xbox Controller to Keyboard/Mouse Mapper" << std::endl;
-    std::cout << "========================================================" << std::endl;
+    std::cout << "GamepadMapper - The Witcher 1 Controller Support" << std::endl;
+    std::cout << "================================================" << std::endl;
+    
+    // Check for administrator privileges (required for SendInput to work with games)
+    if (!IsRunningAsAdministrator())
+    {
+        std::cout << "WARNING: Not running as Administrator!" << std::endl;
+        std::cout << "Keyboard input may not work in games." << std::endl;
+        std::cout << "Please run this application as Administrator for full functionality." << std::endl;
+        std::cout << std::endl;
+    }
+    else
+    {
+        std::cout << "Running with Administrator privileges." << std::endl;
+    }
+    
     std::cout << "Press Ctrl+C to exit" << std::endl << std::endl;
 
     // Initialize XInput device (controller index 0)
@@ -27,24 +63,59 @@ int main()
         return 1;
     }
 
-    std::cout << "Controller connected successfully!" << std::endl;
-    std::cout << "Current mappings:" << std::endl;
-    std::cout << "  Button A -> Space" << std::endl;
-    std::cout << "  Button B -> Escape" << std::endl;
-    std::cout << std::endl;
+    std::cout << "Physical controller connected successfully!" << std::endl;
+
+    // Initialize virtual controller (required per Requirements.md - needs ViGEmBus)
+    VirtualController virtualController;
+    bool virtualControllerAvailable = virtualController.Initialize();
+    if (!virtualControllerAvailable)
+    {
+        std::cout << "WARNING: Virtual controller not available." << std::endl;
+        std::cout << "Keyboard/mouse mapping will still work, but virtual controller is disabled." << std::endl;
+        std::cout << "For the complete solution per Requirements.md, install ViGEmBus driver and ViGEmClient SDK." << std::endl;
+        std::cout << "See SETUP_VIGEM.md for SDK integration instructions." << std::endl;
+    }
 
     // Initialize keyboard/mouse emulator
     KeyboardMouse keyboardMouse;
 
     // Initialize mapper
     Mapper mapper;
-    mapper.Initialize(&controller, &keyboardMouse);
+    if (virtualControllerAvailable)
+    {
+        mapper.Initialize(&controller, &keyboardMouse, &virtualController);
+    }
+    else
+    {
+        mapper.Initialize(&controller, &keyboardMouse, nullptr);
+    }
+
+    std::cout << std::endl;
+    std::cout << "Controller mappings (The Witcher 1):" << std::endl;
+    std::cout << "  Left Stick -> WASD (Movement)" << std::endl;
+    std::cout << "  Right Stick -> Mouse (Camera)" << std::endl;
+    std::cout << "  A -> Enter (Interact)" << std::endl;
+    std::cout << "  B -> Escape (Cancel/Dodge)" << std::endl;
+    std::cout << "  X -> Left Mouse (Fast Attack)" << std::endl;
+    std::cout << "  Y -> Right Mouse (Strong Attack)" << std::endl;
+    std::cout << "  LB -> Ctrl (Cast Sign)" << std::endl;
+    std::cout << "  RB -> Shift (Combat Style)" << std::endl;
+    std::cout << "  LT -> 1 (Fast Style)" << std::endl;
+    std::cout << "  RT -> 2 (Strong Style)" << std::endl;
+    std::cout << "  D-Pad -> 3/4/5/6 (Menus/Signs)" << std::endl;
+    std::cout << "  Start -> Escape (Game Menu)" << std::endl;
+    std::cout << "  Back -> M (Meditation)" << std::endl;
+    std::cout << std::endl;
 
     // Main loop - runs at ~200 Hz (5ms per frame)
     const DWORD frameTimeMs = 5; // 200 Hz = 5ms per frame
     DWORD lastTime = GetTickCount();
 
-    std::cout << "Running... (Press Ctrl+C to exit)" << std::endl << std::endl;
+    std::cout << "Running... (Press Ctrl+C to exit)" << std::endl;
+    std::cout << "IMPORTANT: Make sure The Witcher 1 window is in focus for keyboard input to work!" << std::endl;
+    std::cout << std::endl;
+    std::cout << "DEBUG: If buttons don't work, check the console for debug messages (Debug build only)." << std::endl;
+    std::cout << std::endl;
 
     while (true)
     {
@@ -73,6 +144,9 @@ int main()
         // Exit on controller disconnect (handled above)
         // User can exit with Ctrl+C in console
     }
+
+    // Cleanup
+    virtualController.Shutdown();
 
     std::cout << "Exiting..." << std::endl;
     return 0;

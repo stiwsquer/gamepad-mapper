@@ -69,6 +69,42 @@ public:
      */
     bool IsConnected() const { return m_isConnected; }
 
+    /**
+     * Get left thumbstick X position (-32768 to 32767)
+     * @return X position
+     */
+    SHORT GetLeftStickX() const;
+
+    /**
+     * Get left thumbstick Y position (-32768 to 32767)
+     * @return Y position
+     */
+    SHORT GetLeftStickY() const;
+
+    /**
+     * Get right thumbstick X position (-32768 to 32767)
+     * @return X position
+     */
+    SHORT GetRightStickX() const;
+
+    /**
+     * Get right thumbstick Y position (-32768 to 32767)
+     * @return Y position
+     */
+    SHORT GetRightStickY() const;
+
+    /**
+     * Get left trigger value (0 to 255)
+     * @return Trigger value
+     */
+    BYTE GetLeftTrigger() const;
+
+    /**
+     * Get right trigger value (0 to 255)
+     * @return Trigger value
+     */
+    BYTE GetRightTrigger() const;
+
 private:
     int m_controllerIndex;
     XINPUT_STATE m_currentState;

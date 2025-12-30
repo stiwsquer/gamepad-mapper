@@ -57,10 +57,48 @@ public:
      */
     bool SendMouseMove(int deltaX, int deltaY);
 
+    /**
+     * Send keyboard input using keybd_event (alternative to SendInput)
+     * Some games block SendInput but allow keybd_event
+     * @param virtualKey Virtual key code
+     * @param keyDown true for key down, false for key up
+     * @return true if successful
+     */
+    bool SendKeyEvent(WORD virtualKey, bool keyDown);
+
+    /**
+     * Send keyboard input directly to a window using PostMessage
+     * This bypasses input blocking in some games
+     * @param hWnd Window handle (nullptr = foreground window)
+     * @param virtualKey Virtual key code
+     * @param keyDown true for key down, false for key up
+     * @return true if successful
+     */
+    bool SendKeyToWindow(HWND hWnd, WORD virtualKey, bool keyDown);
+
+    /**
+     * Get the game window handle (cached for performance)
+     * @return Window handle or nullptr if not found
+     */
+    HWND GetGameWindow();
+
+    /**
+     * Find window by title (case-insensitive partial match)
+     * Supports both ANSI and Unicode window titles
+     * @param titlePart Part of the window title to search for (UTF-8)
+     * @return Window handle or nullptr if not found
+     */
+    static HWND FindWindowByTitle(const char* titlePart);
+
 private:
     /**
      * Helper to convert button index to MOUSEEVENTF flag
      */
     DWORD GetMouseButtonFlag(int button) const;
+
+    // Cached game window handle to avoid repeated searches
+    HWND m_cachedGameWindow;
+    DWORD m_lastWindowCheckTime;
+    static const DWORD WINDOW_CACHE_TIMEOUT_MS = 5000; // Re-check every 5 seconds
 };
 

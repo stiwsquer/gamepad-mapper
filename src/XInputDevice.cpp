@@ -87,3 +87,57 @@ bool XInputDevice::IsButtonJustReleased(WORD button) const
     return wasPressed && !isPressed;
 }
 
+SHORT XInputDevice::GetLeftStickX() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.sThumbLX;
+}
+
+SHORT XInputDevice::GetLeftStickY() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.sThumbLY;
+}
+
+SHORT XInputDevice::GetRightStickX() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.sThumbRX;
+}
+
+SHORT XInputDevice::GetRightStickY() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.sThumbRY;
+}
+
+BYTE XInputDevice::GetLeftTrigger() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.bLeftTrigger;
+}
+
+BYTE XInputDevice::GetRightTrigger() const
+{
+    if (!m_isConnected)
+    {
+        return 0;
+    }
+    return m_currentState.Gamepad.bRightTrigger;
+}
+
