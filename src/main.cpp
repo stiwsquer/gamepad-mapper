@@ -144,6 +144,9 @@ int main()
         if (rawInputController.Initialize(hwnd))
         {
             std::cout << "Raw Input initialized successfully." << std::endl;
+            std::cout << "WARNING: Raw Input may not work with Xbox controllers." << std::endl;
+            std::cout << "         Xbox controllers prefer XInput and may not send Raw Input data." << std::endl;
+            std::cout << "         If you experience issues, try DirectInput mode (option 3) instead." << std::endl;
             std::cout << "Waiting for controller input..." << std::endl;
             std::cout << "Please press any button on your controller." << std::endl;
             controllerConnected = true;
@@ -267,42 +270,91 @@ int main()
             // because it copies current to previous
             
             // Process Raw Input button mappings BEFORE Update()
-            // Try all button indices to find which one corresponds to A and B
+            // Hold keys down while buttons are pressed, release when released
             // Button A (index 0) -> Space
+            static bool spaceKeyHeld = false;
             if (rawInputController.IsButtonJustPressed(0)) // BUTTON_A = 0
             {
-                std::cout << "Raw Input: Button 0 (A?) pressed - sending Space" << std::endl;
+                std::cout << "Raw Input: Button 0 (A?) pressed - sending Space DOWN" << std::endl;
                 keyboardMouse.SendKeyDown(VK_SPACE);
-                keyboardMouse.SendKeyUp(VK_SPACE); // Also send key up immediately for testing
+                spaceKeyHeld = true;
             }
             else if (rawInputController.IsButtonJustReleased(0))
             {
-                std::cout << "Raw Input: Button 0 (A?) released" << std::endl;
+                std::cout << "Raw Input: Button 0 (A?) released - sending Space UP" << std::endl;
+                keyboardMouse.SendKeyUp(VK_SPACE);
+                spaceKeyHeld = false;
+            }
+            else if (rawInputController.IsButtonPressed(0) && !spaceKeyHeld)
+            {
+                // Button is held but we missed the press event - send key down
+                keyboardMouse.SendKeyDown(VK_SPACE);
+                spaceKeyHeld = true;
+            }
+            else if (!rawInputController.IsButtonPressed(0) && spaceKeyHeld)
+            {
+                // Button is released but we missed the release event - send key up
+                keyboardMouse.SendKeyUp(VK_SPACE);
+                spaceKeyHeld = false;
             }
             
             // Button B (index 1) -> Escape
+            static bool escapeKeyHeld = false;
             if (rawInputController.IsButtonJustPressed(1)) // BUTTON_B = 1
             {
-                std::cout << "Raw Input: Button 1 (B?) pressed - sending Escape" << std::endl;
+                std::cout << "Raw Input: Button 1 (B?) pressed - sending Escape DOWN" << std::endl;
                 keyboardMouse.SendKeyDown(VK_ESCAPE);
-                keyboardMouse.SendKeyUp(VK_ESCAPE); // Also send key up immediately for testing
+                escapeKeyHeld = true;
             }
             else if (rawInputController.IsButtonJustReleased(1))
             {
-                std::cout << "Raw Input: Button 1 (B?) released" << std::endl;
+                std::cout << "Raw Input: Button 1 (B?) released - sending Escape UP" << std::endl;
+                keyboardMouse.SendKeyUp(VK_ESCAPE);
+                escapeKeyHeld = false;
+            }
+            else if (rawInputController.IsButtonPressed(1) && !escapeKeyHeld)
+            {
+                // Button is held but we missed the press event - send key down
+                keyboardMouse.SendKeyDown(VK_ESCAPE);
+                escapeKeyHeld = true;
+            }
+            else if (!rawInputController.IsButtonPressed(1) && escapeKeyHeld)
+            {
+                // Button is released but we missed the release event - send key up
+                keyboardMouse.SendKeyUp(VK_ESCAPE);
+                escapeKeyHeld = false;
             }
             
             // Debug: Check all buttons to see which ones are being detected
+            // Only show when buttons change to reduce spam
+            static bool lastButtonStates[10] = { false };
             static DWORD lastDebugTime = 0;
-            if (currentTime - lastDebugTime > 1000) // Every second
+            bool anyButtonChanged = false;
+            for (int i = 0; i < 10; i++)
             {
+                bool currentState = rawInputController.IsButtonPressed(i);
+                if (currentState != lastButtonStates[i])
+                {
+                    anyButtonChanged = true;
+                    lastButtonStates[i] = currentState;
+                }
+            }
+            
+            if (anyButtonChanged && (currentTime - lastDebugTime > 200)) // Every 200ms when buttons change
+            {
+                std::cout << "Raw Input: Buttons currently pressed: ";
+                bool first = true;
                 for (int i = 0; i < 10; i++)
                 {
                     if (rawInputController.IsButtonPressed(i))
                     {
-                        std::cout << "Raw Input: Button " << i << " is currently pressed" << std::endl;
+                        if (!first) std::cout << ", ";
+                        std::cout << i;
+                        first = false;
                     }
                 }
+                if (first) std::cout << "none";
+                std::cout << std::endl;
                 lastDebugTime = currentTime;
             }
             
