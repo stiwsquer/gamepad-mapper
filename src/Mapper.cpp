@@ -16,6 +16,7 @@ Mapper::Mapper()
     , m_dPressed(false)
     , m_leftTriggerPressed(false)
     , m_rightTriggerPressed(false)
+    , m_bothTriggersPressed(false)
 {
 }
 
@@ -55,14 +56,13 @@ void Mapper::Update()
 
 void Mapper::ProcessButtonMappings()
 {
-    // According to Requirements.md:
-    // A -> Enter (Interact)
-    HandleButtonMapping(XINPUT_GAMEPAD_A, VK_RETURN);
+    // A -> Space (Zatrzymanie gry / Pause game)
+    HandleButtonMapping(XINPUT_GAMEPAD_A, VK_SPACE);
 
-    // B -> Escape (Cancel / Dodge)
+    // B -> Escape
     HandleButtonMapping(XINPUT_GAMEPAD_B, VK_ESCAPE);
 
-    // X -> Left Mouse Button (Fast Attack)
+    // X -> Left Mouse Button (Lewa mysz)
     if (m_controller->IsButtonJustPressed(XINPUT_GAMEPAD_X))
     {
         m_keyboardMouse->SendMouseButtonDown(0);
@@ -72,7 +72,7 @@ void Mapper::ProcessButtonMappings()
         m_keyboardMouse->SendMouseButtonUp(0);
     }
 
-    // Y -> Right Mouse Button (Strong Attack)
+    // Y -> Right Mouse Button (Prawa mysz)
     if (m_controller->IsButtonJustPressed(XINPUT_GAMEPAD_Y))
     {
         m_keyboardMouse->SendMouseButtonDown(1);
@@ -82,33 +82,49 @@ void Mapper::ProcessButtonMappings()
         m_keyboardMouse->SendMouseButtonUp(1);
     }
 
-    // LB -> Ctrl (Cast Sign)
-    HandleButtonMapping(XINPUT_GAMEPAD_LEFT_SHOULDER, VK_CONTROL);
+    // Right Stick Click -> TAB (Tryb Rozmowy / Conversation mode)
+    HandleButtonMapping(XINPUT_GAMEPAD_RIGHT_THUMB, VK_TAB);
 
-    // RB -> Shift (Combat Style)
-    HandleButtonMapping(XINPUT_GAMEPAD_RIGHT_SHOULDER, VK_SHIFT);
+    // LB -> 1 and 6 (Eliksiry szybki dostęp)
+    // Press 1 on press, 6 on release (or just 1 - you can adjust)
+    if (m_controller->IsButtonJustPressed(XINPUT_GAMEPAD_LEFT_SHOULDER))
+    {
+        m_keyboardMouse->SendKeyDown('1');
+        m_keyboardMouse->SendKeyUp('1');
+        m_keyboardMouse->SendKeyDown('6');
+        m_keyboardMouse->SendKeyUp('6');
+    }
 
-    // LT -> Key 1 (Fast Style) - handled in ProcessTriggers
+    // RB -> 2 and 7 (Eliksiry szybki dostęp)
+    if (m_controller->IsButtonJustPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER))
+    {
+        m_keyboardMouse->SendKeyDown('2');
+        m_keyboardMouse->SendKeyUp('2');
+        m_keyboardMouse->SendKeyDown('7');
+        m_keyboardMouse->SendKeyUp('7');
+    }
 
-    // RT -> Key 2 (Strong Style) - handled in ProcessTriggers
+    // LT -> X (Styl Szybki / Fast Style) - handled in ProcessTriggers
+    // RT -> Z (Styl Silny / Strong Style) - handled in ProcessTriggers
+    // LT + RT -> C (Styl Grupowy / Group Style) - handled in ProcessTriggers
 
-    // D-Pad Up -> Key 3
-    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_UP, '3');
+    // D-Pad Up -> - (Następny Znak / Next Sign)
+    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_UP, VK_OEM_MINUS); // - key
 
-    // D-Pad Down -> Key 4
-    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_DOWN, '4');
+    // D-Pad Down -> = (Poprzedni Znak / Previous Sign)
+    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_DOWN, VK_OEM_PLUS); // = key
 
-    // D-Pad Left -> Key 5
-    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_LEFT, '5');
+    // D-Pad Left -> [ (Poprzednia broń / Previous weapon)
+    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_LEFT, VK_OEM_4); // [ key
 
-    // D-Pad Right -> Key 6
-    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_RIGHT, '6');
+    // D-Pad Right -> ] (Następna broń / Next weapon)
+    HandleButtonMapping(XINPUT_GAMEPAD_DPAD_RIGHT, VK_OEM_6); // ] key
 
-    // Start -> Escape (Game Menu)
-    HandleButtonMapping(XINPUT_GAMEPAD_START, VK_ESCAPE);
+    // Start (Menu button) -> H (Bohater / Hero)
+    HandleButtonMapping(XINPUT_GAMEPAD_START, 'H');
 
-    // Back -> M (Meditation)
-    HandleButtonMapping(XINPUT_GAMEPAD_BACK, 'M');
+    // Back (View button) -> I (Ekwipunek / Inventory)
+    HandleButtonMapping(XINPUT_GAMEPAD_BACK, 'I');
 }
 
 void Mapper::ProcessAnalogSticks()
@@ -123,13 +139,13 @@ void Mapper::ProcessAnalogSticks()
     SHORT leftY = ApplyDeadZone(m_controller->GetLeftStickY());
 
     // Determine movement direction based on stick position
-    // W (forward) - negative Y
-    // S (backward) - positive Y
+    // W (forward) - positive Y (inverted from XInput where negative Y is up)
+    // S (backward) - negative Y
     // A (left) - negative X
     // D (right) - positive X
 
-    bool shouldPressW = (leftY < -DEAD_ZONE);
-    bool shouldPressS = (leftY > DEAD_ZONE);
+    bool shouldPressW = (leftY > DEAD_ZONE);  // Inverted: positive Y = forward
+    bool shouldPressS = (leftY < -DEAD_ZONE); // Inverted: negative Y = backward
     bool shouldPressA = (leftX < -DEAD_ZONE);
     bool shouldPressD = (leftX > DEAD_ZONE);
 
@@ -187,8 +203,8 @@ void Mapper::ProcessAnalogSticks()
 
     // Scale stick movement to mouse movement
     // XInput range is -32768 to 32767, scale to reasonable mouse delta
-    // Using a sensitivity multiplier (adjust as needed)
-    const float mouseSensitivity = 0.1f;
+    // Using a lower sensitivity multiplier to reduce fast movement
+    const float mouseSensitivity = 0.0015f; // Extremely low sensitivity for very precise camera control
     int mouseDeltaX = static_cast<int>(rightX * mouseSensitivity);
     int mouseDeltaY = static_cast<int>(-rightY * mouseSensitivity); // Invert Y for natural camera movement
 
@@ -205,33 +221,67 @@ void Mapper::ProcessTriggers()
         return;
     }
 
-    // LT -> Key 1 (Fast Style)
-    BYTE leftTrigger = m_controller->GetLeftTrigger();
     const BYTE triggerThreshold = 128; // 50% threshold
-
-    if (leftTrigger > triggerThreshold && !m_leftTriggerPressed)
-    {
-        m_keyboardMouse->SendKeyDown('1');
-        m_leftTriggerPressed = true;
-    }
-    else if (leftTrigger <= triggerThreshold && m_leftTriggerPressed)
-    {
-        m_keyboardMouse->SendKeyUp('1');
-        m_leftTriggerPressed = false;
-    }
-
-    // RT -> Key 2 (Strong Style)
+    
+    BYTE leftTrigger = m_controller->GetLeftTrigger();
     BYTE rightTrigger = m_controller->GetRightTrigger();
+    
+    bool leftPressed = leftTrigger > triggerThreshold;
+    bool rightPressed = rightTrigger > triggerThreshold;
+    bool bothPressed = leftPressed && rightPressed;
 
-    if (rightTrigger > triggerThreshold && !m_rightTriggerPressed)
+    // Handle LT + RT combination first (Styl Grupowy / Group Style -> C)
+    if (bothPressed && !m_bothTriggersPressed)
     {
-        m_keyboardMouse->SendKeyDown('2');
-        m_rightTriggerPressed = true;
+        // Release individual triggers if they were pressed
+        if (m_leftTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyUp('X');
+            m_leftTriggerPressed = false;
+        }
+        if (m_rightTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyUp('Z');
+            m_rightTriggerPressed = false;
+        }
+        
+        // Press C for group style
+        m_keyboardMouse->SendKeyDown('C');
+        m_bothTriggersPressed = true;
     }
-    else if (rightTrigger <= triggerThreshold && m_rightTriggerPressed)
+    else if (!bothPressed && m_bothTriggersPressed)
     {
-        m_keyboardMouse->SendKeyUp('2');
-        m_rightTriggerPressed = false;
+        // Release C
+        m_keyboardMouse->SendKeyUp('C');
+        m_bothTriggersPressed = false;
+    }
+    
+    // Handle LT alone (Styl Szybki / Fast Style -> X)
+    // Only if both triggers are not pressed
+    if (!bothPressed)
+    {
+        if (leftPressed && !m_leftTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyDown('X');
+            m_leftTriggerPressed = true;
+        }
+        else if (!leftPressed && m_leftTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyUp('X');
+            m_leftTriggerPressed = false;
+        }
+
+        // Handle RT alone (Styl Silny / Strong Style -> Z)
+        if (rightPressed && !m_rightTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyDown('Z');
+            m_rightTriggerPressed = true;
+        }
+        else if (!rightPressed && m_rightTriggerPressed)
+        {
+            m_keyboardMouse->SendKeyUp('Z');
+            m_rightTriggerPressed = false;
+        }
     }
 }
 

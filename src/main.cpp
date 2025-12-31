@@ -94,17 +94,22 @@ int main()
     std::cout << "Controller mappings (The Witcher 1):" << std::endl;
     std::cout << "  Left Stick -> WASD (Movement)" << std::endl;
     std::cout << "  Right Stick -> Mouse (Camera)" << std::endl;
-    std::cout << "  A -> Enter (Interact)" << std::endl;
-    std::cout << "  B -> Escape (Cancel/Dodge)" << std::endl;
-    std::cout << "  X -> Left Mouse (Fast Attack)" << std::endl;
-    std::cout << "  Y -> Right Mouse (Strong Attack)" << std::endl;
-    std::cout << "  LB -> Ctrl (Cast Sign)" << std::endl;
-    std::cout << "  RB -> Shift (Combat Style)" << std::endl;
-    std::cout << "  LT -> 1 (Fast Style)" << std::endl;
-    std::cout << "  RT -> 2 (Strong Style)" << std::endl;
-    std::cout << "  D-Pad -> 3/4/5/6 (Menus/Signs)" << std::endl;
-    std::cout << "  Start -> Escape (Game Menu)" << std::endl;
-    std::cout << "  Back -> M (Meditation)" << std::endl;
+    std::cout << "  Right Stick Click -> TAB (Tryb Rozmowy)" << std::endl;
+    std::cout << "  A -> Space (Zatrzymanie gry)" << std::endl;
+    std::cout << "  B -> Escape" << std::endl;
+    std::cout << "  X -> Left Mouse Button" << std::endl;
+    std::cout << "  Y -> Right Mouse Button" << std::endl;
+    std::cout << "  LB -> 1, 6 (Eliksiry szybki dostęp)" << std::endl;
+    std::cout << "  RB -> 2, 7 (Eliksiry szybki dostęp)" << std::endl;
+    std::cout << "  LT -> X (Styl Szybki)" << std::endl;
+    std::cout << "  RT -> Z (Styl Silny)" << std::endl;
+    std::cout << "  LT + RT -> C (Styl Grupowy)" << std::endl;
+    std::cout << "  D-Pad Up -> - (Następny Znak)" << std::endl;
+    std::cout << "  D-Pad Down -> = (Poprzedni Znak)" << std::endl;
+    std::cout << "  D-Pad Left -> [ (Poprzednia broń)" << std::endl;
+    std::cout << "  D-Pad Right -> ] (Następna broń)" << std::endl;
+    std::cout << "  Start -> H (Bohater)" << std::endl;
+    std::cout << "  Back -> I (Ekwipunek)" << std::endl;
     std::cout << std::endl;
 
     // Main loop - runs at ~200 Hz (5ms per frame)

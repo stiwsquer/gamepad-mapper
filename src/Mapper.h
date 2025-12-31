@@ -80,5 +80,6 @@ private:
     // Track trigger states
     bool m_leftTriggerPressed;
     bool m_rightTriggerPressed;
+    bool m_bothTriggersPressed; // For LT + RT combination
 };
 
